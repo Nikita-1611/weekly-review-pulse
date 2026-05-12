@@ -1,0 +1,24 @@
+# Weekly Product Review Pulse — Configuration Template
+# Copy this file to config.yaml and fill in your real values:
+#   cp config.example.yaml config.yaml
+
+# Global Settings
+rolling_window_weeks: 12
+environment: development
+
+products:
+  - id: "groww"
+    name: "Groww"
+    app_store_id: "1404871703"
+    play_store_package: "com.nextbillion.groww"
+    google_doc_id: "<YOUR_GOOGLE_DOC_ID>"
+    stakeholder_emails:
+      - "<YOUR_EMAIL>"
+
+#  - id: "indmoney"
+#    name: "INDMoney"
+#    app_store_id: "1454616202"
+#    play_store_package: "com.indwealth.app"
+#    google_doc_id: "<YOUR_GOOGLE_DOC_ID>"
+#    stakeholder_emails:
+#      - "<YOUR_EMAIL>"

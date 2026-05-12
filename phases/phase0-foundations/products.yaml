@@ -1,0 +1,52 @@
+# Global Settings
+rolling_window_weeks: 10
+environment: development
+
+products:
+  - id: "indmoney"
+    name: "INDMoney"
+    app_store_id: "1454616202"
+    play_store_package: "com.indwealth.app"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"
+
+  - id: "cred"
+    name: "CRED"
+    app_store_id: "1428580080"
+    play_store_package: "com.dreamplug.android.cred"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"
+
+  - id: "groww"
+    name: "Groww"
+    app_store_id: "1404190482"
+    play_store_package: "com.nextbillion.groww"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"
+
+  - id: "powerup"
+    name: "PowerUp Money"
+    app_store_id: "<PLACEHOLDER_APP_STORE_ID>"
+    play_store_package: "<PLACEHOLDER_PLAY_STORE_PACKAGE>"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"
+
+  - id: "wealth_monitor"
+    name: "Wealth Monitor"
+    app_store_id: "<PLACEHOLDER_APP_STORE_ID>"
+    play_store_package: "<PLACEHOLDER_PLAY_STORE_PACKAGE>"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"
+
+  - id: "kuvera"
+    name: "Kuvera"
+    app_store_id: "<PLACEHOLDER_APP_STORE_ID>"
+    play_store_package: "<PLACEHOLDER_PLAY_STORE_PACKAGE>"
+    google_doc_id: "<PLACEHOLDER_DOC_ID>"
+    stakeholder_emails:
+      - "<PLACEHOLDER_EMAIL>"

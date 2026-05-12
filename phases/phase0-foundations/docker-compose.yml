@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  agent:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: ["--help"]

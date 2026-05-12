@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Google API Secrets (CRITICAL)
+credentials.json
+token.json
+
+# Config with real IDs/emails (use config.example.yaml as template)
+config.yaml
+
+# Local databases
+*.db
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc Local Files
+superbase*
+startup.log
+scratch/

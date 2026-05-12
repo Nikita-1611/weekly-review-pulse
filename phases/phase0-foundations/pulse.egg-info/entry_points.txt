@@ -1,0 +1,2 @@
+[console_scripts]
+pulse = agent.__main__:app

@@ -1,0 +1,18 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/phases/phase0-foundations",
+        "${workspaceFolder}/phases/phase1-ingestion-storage",
+        "${workspaceFolder}/phases/phase2-reasoning",
+        "${workspaceFolder}/phases/phase3-mcp-delivery",
+        "${workspaceFolder}/phases/phase4-idempotency"
+    ],
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/phases/phase0-foundations",
+        "${workspaceFolder}/phases/phase1-ingestion-storage",
+        "${workspaceFolder}/phases/phase2-reasoning",
+        "${workspaceFolder}/phases/phase3-mcp-delivery",
+        "${workspaceFolder}/phases/phase4-idempotency"
+    ],
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.terminal.activateEnvInSelectedTerminal": true
+}
