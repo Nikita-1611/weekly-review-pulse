@@ -9,17 +9,19 @@ import sqlite3
 import yaml
 from typing import List, Optional, Dict
 from datetime import datetime
-import run_pulse
+
 
 # 1. Stitch project together (same as run_pulse.py)
 ROOT_DIR = Path(__file__).resolve().parent
 PHASES_DIR = ROOT_DIR / "phases"
 
-sys.path.append(str(PHASES_DIR / "phase0-foundations"))
-sys.path.append(str(PHASES_DIR / "phase1-ingestion-storage"))
-sys.path.append(str(PHASES_DIR / "phase2-reasoning"))
-sys.path.append(str(PHASES_DIR / "phase3-mcp-delivery"))
-sys.path.append(str(PHASES_DIR / "phase4-idempotency"))
+sys.path.insert(0, str(PHASES_DIR / "phase0-foundations"))
+sys.path.insert(0, str(PHASES_DIR / "phase1-ingestion-storage"))
+sys.path.insert(0, str(PHASES_DIR / "phase2-reasoning"))
+sys.path.insert(0, str(PHASES_DIR / "phase3-mcp-delivery"))
+sys.path.insert(0, str(PHASES_DIR / "phase4-idempotency"))
+
+import run_pulse
 
 from agent.config import yaml_settings
 from agent.storage import get_connection, init_db

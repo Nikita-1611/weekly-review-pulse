@@ -10,11 +10,11 @@ ROOT_DIR = Path(__file__).resolve().parent
 PHASES_DIR = ROOT_DIR / "phases"
 
 # Add all phase directories as top-level search paths
-sys.path.append(str(PHASES_DIR / "phase0-foundations"))
-sys.path.append(str(PHASES_DIR / "phase1-ingestion-storage"))
-sys.path.append(str(PHASES_DIR / "phase2-reasoning"))
-sys.path.append(str(PHASES_DIR / "phase3-mcp-delivery"))
-sys.path.append(str(PHASES_DIR / "phase4-idempotency"))
+sys.path.insert(0, str(PHASES_DIR / "phase0-foundations"))
+sys.path.insert(0, str(PHASES_DIR / "phase1-ingestion-storage"))
+sys.path.insert(0, str(PHASES_DIR / "phase2-reasoning"))
+sys.path.insert(0, str(PHASES_DIR / "phase3-mcp-delivery"))
+sys.path.insert(0, str(PHASES_DIR / "phase4-idempotency"))
 
 # Now we can import real logic from across the different phase folders
 from agent.storage import init_db, save_reviews, get_reviews_to_embed, save_embeddings, update_review_clusters, get_clustered_reviews, save_themes, get_themes
