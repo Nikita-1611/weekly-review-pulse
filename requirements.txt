@@ -4,8 +4,8 @@ spacy
 sentence-transformers
 umap-learn
 hdbscan
-langchain
-langchain-groq
+langchain==0.1.13
+langchain-groq==0.1.5
 pydantic-settings
 mcp
 fastmcp
