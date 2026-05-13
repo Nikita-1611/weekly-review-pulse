@@ -30,6 +30,9 @@ from run_pulse import run_pipeline
 
 app = FastAPI(title="Pulse API Bridge")
 
+@app.on_event("startup")
+def startup_db():
+    init_db()
 # Enable CORS for the React Frontend
 app.add_middleware(
     CORSMiddleware,
