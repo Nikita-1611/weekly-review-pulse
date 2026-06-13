@@ -13,6 +13,9 @@ class PostgresConnectionWrapper:
         self._conn = conn
 
     def cursor(self, *args, **kwargs):
+        if 'cursor_factory' not in kwargs and not args:
+            from psycopg2.extras import DictCursor
+            kwargs['cursor_factory'] = DictCursor
         return self._conn.cursor(*args, **kwargs)
 
     def commit(self):
