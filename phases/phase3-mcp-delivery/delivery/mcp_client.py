@@ -37,8 +37,6 @@ async def call_docs_mcp(doc_id: str, anchor_text: str, content_markdown: str, ru
                     data = json.loads(result.content[0].text)
                     if data.get("status") == "success":
                         return data.get("heading_id")
-                    else:
-                        logger.error(f"Docs MCP tool returned error: {data.get('message')}")
         return None
     except Exception as e:
         logger.error(f"Failed to call Docs MCP: {e}")
@@ -68,8 +66,6 @@ async def call_gmail_mcp(to_emails: List[str], subject: str, body_html: str, run
                     data = json.loads(result.content[0].text)
                     if data.get("status") == "success":
                         return data.get("message_id")
-                    else:
-                        logger.error(f"Gmail MCP tool returned error: {data.get('message')}")
         return None
     except Exception as e:
         logger.error(f"Failed to call Gmail MCP: {e}")

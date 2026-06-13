@@ -61,6 +61,7 @@ class RunStatus(BaseModel):
     iso_week: str
     status: str
     updated_at: str
+    error_log: Optional[str] = None
 
 class Review(BaseModel):
     id: str
@@ -114,7 +115,7 @@ def get_recent_reviews(product_id: Optional[str] = None, cluster_id: Optional[in
 @app.get("/api/history", response_model=List[RunStatus])
 def get_run_history():
     conn = get_connection()
-    rows = conn.execute(adapt_query("SELECT run_id, product_id, iso_week, status, updated_at FROM runs ORDER BY updated_at DESC LIMIT 20")).fetchall()
+    rows = conn.execute(adapt_query("SELECT run_id, product_id, iso_week, status, error_log, updated_at FROM runs ORDER BY updated_at DESC LIMIT 20")).fetchall()
     conn.close()
     res = []
     for row in rows:
@@ -236,6 +237,16 @@ def publish_pulse(product_id: str, background_tasks: BackgroundTasks, week: Opti
     from run_pulse import publish_draft
     background_tasks.add_task(publish_draft, product_id, iso_week)
     return {"message": f"Publishing triggered for {product_id} ({iso_week})", "status": "publishing"}
+
+@app.post("/api/admin/reset/{run_id}")
+def admin_reset_run(run_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE runs SET status = 'drafted', error_log = NULL WHERE run_id = %s", (run_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "success", "message": f"Run {run_id} reset to drafted" }
 
 @app.get("/api/email-preview/{product_id}")
 def get_email_preview(product_id: str, week: Optional[str] = None):
