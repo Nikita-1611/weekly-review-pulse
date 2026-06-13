@@ -8,6 +8,28 @@ if not IS_SQLITE:
     import psycopg2
     from psycopg2.extras import DictCursor, execute_values
 
+class PostgresConnectionWrapper:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self, *args, **kwargs):
+        return self._conn.cursor(*args, **kwargs)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+    def execute(self, sql, params=None):
+        from psycopg2.extras import DictCursor
+        cursor = self._conn.cursor(cursor_factory=DictCursor)
+        cursor.execute(sql, params)
+        return cursor
+
 def get_connection():
     """Returns a connection to the PostgreSQL database if DATABASE_URL is set, else local SQLite."""
     if IS_SQLITE:
@@ -17,7 +39,7 @@ def get_connection():
         return conn
     else:
         conn = psycopg2.connect(DATABASE_URL)
-        return conn
+        return PostgresConnectionWrapper(conn)
 
 def adapt_query(query: str) -> str:
     """Replaces %s placeholders with ? placeholders if using SQLite."""
