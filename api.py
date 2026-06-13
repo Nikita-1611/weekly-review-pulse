@@ -1,5 +1,11 @@
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load root .env file explicitly on startup
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(ROOT_DIR, ".env"), override=True)
+
 from pathlib import Path
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
@@ -110,7 +116,13 @@ def get_run_history():
     conn = get_connection()
     rows = conn.execute(adapt_query("SELECT run_id, product_id, iso_week, status, updated_at FROM runs ORDER BY updated_at DESC LIMIT 20")).fetchall()
     conn.close()
-    return [dict(row) for row in rows]
+    res = []
+    for row in rows:
+        d = dict(row)
+        if isinstance(d['updated_at'], datetime):
+            d['updated_at'] = d['updated_at'].strftime("%Y-%m-%d %H:%M:%S")
+        res.append(d)
+    return res
 
 @app.get("/api/dashboard/{product_id}")
 def get_dashboard_summary(product_id: str):
@@ -127,6 +139,12 @@ def get_dashboard_summary(product_id: str):
         ORDER BY updated_at DESC LIMIT 1
     """), (product_id,)).fetchone()
     
+    latest_run_dict = None
+    if latest_run:
+        latest_run_dict = dict(latest_run)
+        if isinstance(latest_run_dict['updated_at'], datetime):
+            latest_run_dict['updated_at'] = latest_run_dict['updated_at'].strftime("%Y-%m-%d %H:%M:%S")
+            
     # 3. Themes (Phase 3 logic)
     # Fetch themes and join with review counts per cluster
     themes_rows = conn.execute(adapt_query("""
@@ -166,11 +184,18 @@ def get_dashboard_summary(product_id: str):
     
     conn.close()
     
+    activity_list = []
+    for a in activity:
+        ad = dict(a)
+        if isinstance(ad['updated_at'], datetime):
+            ad['updated_at'] = ad['updated_at'].strftime("%Y-%m-%d %H:%M:%S")
+        activity_list.append(ad)
+        
     return {
         "total_reviews": total_reviews,
-        "latest_run": dict(latest_run) if latest_run else None,
+        "latest_run": latest_run_dict,
         "themes": [dict(t) for t in themes],
-        "activity": [dict(a) for a in activity]
+        "activity": activity_list
     }
 
 @app.post("/api/trigger/{product_id}")

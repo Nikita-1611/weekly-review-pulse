@@ -1,5 +1,11 @@
+import os
 import sys
 import traceback
+from dotenv import load_dotenv
+
+# Load root .env file explicitly on startup
+root_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(root_dir, ".env"), override=True)
 
 if __name__ == "__main__":
     try:
