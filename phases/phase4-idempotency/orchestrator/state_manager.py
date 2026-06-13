@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional, Tuple
-from agent.storage import get_connection
+from agent.storage import get_connection, adapt_query
 from agent.helpers import generate_run_id
 from agent.logger import get_logger
 from delivery.mcp_client import check_doc_section_exists
@@ -16,8 +16,7 @@ class StateManager:
         conn = get_connection()
         cursor = conn.cursor()
         
-        # PostgreSQL uses %s
-        cursor.execute("SELECT * FROM runs WHERE product_id = %s AND iso_week = %s", (product_id, iso_week))
+        cursor.execute(adapt_query("SELECT * FROM runs WHERE product_id = %s AND iso_week = %s"), (product_id, iso_week))
         row = cursor.fetchone()
         
         if row:
@@ -29,10 +28,10 @@ class StateManager:
             status = "started"
             details = {"run_id": run_id, "product_id": product_id, "iso_week": iso_week, "status": status}
             
-            cursor.execute("""
+            cursor.execute(adapt_query("""
                 INSERT INTO runs (run_id, product_id, iso_week, status)
                 VALUES (%s, %s, %s, %s)
-            """, (run_id, product_id, iso_week, status))
+            """), (run_id, product_id, iso_week, status))
             conn.commit()
             
         conn.close()
@@ -60,7 +59,7 @@ class StateManager:
             
         params.append(run_id)
         
-        query = f"UPDATE runs SET {', '.join(updates)} WHERE run_id = %s"
+        query = adapt_query(f"UPDATE runs SET {', '.join(updates)} WHERE run_id = %s")
         cursor.execute(query, tuple(params))
         conn.commit()
         conn.close()

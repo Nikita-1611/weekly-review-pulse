@@ -99,6 +99,80 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Print Layout Styles for PDF */
+        @media print {
+            /* Hide non-report layouts and sidebars completely */
+            aside, 
+            #toast-container,
+            #status-warning,
+            .filter-btn,
+            #details-modal {
+                display: none !important;
+            }
+
+            /* Clean up header and hide action buttons */
+            header {
+                height: auto !important;
+                padding: 1rem 0 !important;
+                border-bottom: 2px solid #00D09C !important;
+                margin-bottom: 2rem !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+            }
+            header button, 
+            header .w-8.h-8 {
+                display: none !important;
+            }
+
+            /* Enable layout pagination and reset height limits */
+            body, html, #main-container, main {
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: white !important;
+                color: black !important;
+            }
+
+            main {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+
+            .max-w-4xl {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            /* Render summary row grid column */
+            .grid-cols-3 {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 1rem !important;
+                margin-bottom: 2rem !important;
+            }
+
+            /* Format themes card for printing */
+            .theme-card {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                border: 1px solid #cbd5e1 !important;
+                background-color: #FFFFFF !important;
+                margin-bottom: 1.5rem !important;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+            .theme-card button {
+                display: none !important;
+            }
+            .print-action-idea {
+                display: block !important;
+            }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -115,8 +189,21 @@
             </div>
         </div>
 
+        <!-- Center Menu Tabs -->
+        <nav class="flex space-x-1 bg-slate-100 p-1 rounded-xl">
+            <a href="#" class="nav-item active px-4 py-2 rounded-lg text-xs font-semibold flex items-center">
+                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 mr-1.5"></i> Feedback Overview
+            </a>
+            <a href="#" class="nav-item px-4 py-2 rounded-lg text-xs font-semibold flex items-center">
+                <i data-lucide="file-edit" class="w-3.5 h-3.5 mr-1.5"></i> Drafts
+            </a>
+            <a href="#" class="nav-item px-4 py-2 rounded-lg text-xs font-semibold flex items-center">
+                <i data-lucide="glob" class="w-3.5 h-3.5 mr-1.5"></i> Market Pulse
+            </a>
+        </nav>
+
         <div class="flex items-center space-x-4">
-            <button onclick="triggerPulse()" class="btn-green text-sm font-semibold px-5 py-2 rounded-lg flex items-center shadow-sm">
+            <button onclick="triggerPulse()" id="generate-btn" class="btn-green text-sm font-semibold px-5 py-2 rounded-lg flex items-center shadow-sm">
                 <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i> Generate New Pulse
             </button>
             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 cursor-pointer">
@@ -125,7 +212,7 @@
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div id="main-container" class="flex flex-1 overflow-hidden">
         
         <!-- Left Sidebar -->
         <aside class="w-64 bg-[#F8FAFC] border-r border-slate-200 flex flex-col shrink-0">
@@ -138,22 +225,6 @@
                             <i data-lucide="layout-grid" class="w-4 h-4 mr-3"></i> Groww
                         </div>
                         <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-300"></div>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Navigation Tabs (Moved from Top Bar) -->
-            <div class="px-4 py-2">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2">Analysis</p>
-                <div class="space-y-1">
-                    <a href="#" class="nav-item active flex items-center px-3 py-2.5 rounded-lg text-sm">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 mr-3"></i> Feedback Overview
-                    </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm">
-                        <i data-lucide="file-edit" class="w-4 h-4 mr-3"></i> Drafts
-                    </a>
-                    <a href="#" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-sm">
-                        <i data-lucide="glob" class="w-4 h-4 mr-3"></i> Market Pulse
                     </a>
                 </div>
             </div>
@@ -242,11 +313,11 @@
                     </div>
                     <i data-lucide="download" class="w-3 h-3 text-slate-300"></i>
                 </button>
-                <!-- 2. Differently styled buttons -->
-                <button onclick="triggerPulse()" id="ship-btn" class="w-full flex items-center justify-between px-4 py-3 btn-green rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-100 group">
+                <!-- Send Email Action -->
+                <button onclick="publishPulse()" id="ship-btn" class="w-full flex items-center justify-between px-4 py-3 btn-green rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-100 group">
                     <div class="flex items-center">
                         <i data-lucide="send" class="w-4 h-4 mr-3 text-white"></i>
-                        Ship Pulse Now
+                        Send via Gmail
                     </div>
                     <i data-lucide="arrow-right" class="w-3 h-3 text-white/50"></i>
                 </button>
@@ -261,6 +332,56 @@
             </div>
         </aside>
 
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div onclick="closeModal()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+        <!-- Modal Content -->
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[85vh] flex flex-col relative overflow-hidden transition-all transform scale-95 duration-200 z-10">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-start">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span id="modal-importance-badge" class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"></span>
+                        <span class="text-xs text-slate-400 font-semibold" id="modal-review-count"></span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900" id="modal-title">Theme Title</h3>
+                </div>
+                <button onclick="closeModal()" class="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1">
+                <!-- Action Idea Card -->
+                <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl space-y-2">
+                    <div class="flex items-center text-emerald-800 space-x-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-emerald-600"></i>
+                        <span class="text-xs font-bold uppercase tracking-wider">Actionable Product Idea</span>
+                    </div>
+                    <p id="modal-action-idea" class="text-sm text-emerald-950 font-medium"></p>
+                </div>
+                
+                <!-- Representative Quote -->
+                <div class="space-y-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Representative User Quote</p>
+                    <div class="bg-slate-50 border-l-2 border-slate-200 p-4 rounded-r-2xl">
+                        <p id="modal-quote" class="text-sm italic text-slate-600"></p>
+                    </div>
+                </div>
+                
+                <!-- Supporting Reviews -->
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supporting Customer Reviews</p>
+                    <div id="modal-reviews-list" class="space-y-3">
+                        <!-- Supporting review cards will load here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast / Notification container -->
@@ -362,16 +483,94 @@
                                 <span class="text-[9px] bg-${importanceColor}-100 text-${importanceColor}-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">${importance}</span>
                             </div>
                         </div>
-                        <button class="text-[10px] text-slate-400 hover:text-slate-900 flex items-center font-bold uppercase">Details</button>
+                        <button class="details-btn text-[10px] text-slate-400 hover:text-slate-900 flex items-center font-bold uppercase">Details</button>
                     </div>
                     <div class="bg-slate-50 border-l-2 border-slate-200 p-3 rounded-r-lg mb-2">
                         <p class="text-xs italic text-slate-500">"${theme.representative_quote || '(No exact representative quote found)'}"</p>
                     </div>
+                    <!-- Hidden on screen, shown only when printing to PDF -->
+                    <div class="print-action-idea hidden mt-3 bg-emerald-50 border border-emerald-100 p-4 rounded-xl space-y-1">
+                        <span class="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Actionable Product Idea</span>
+                        <p class="text-xs text-emerald-950 font-medium">${theme.action_idea || 'No actionable recommendation generated.'}</p>
+                    </div>
                     <p class="text-[10px] text-slate-400 font-medium">Mentioned in ${theme.review_count} reviews</p>
                 `;
+                
+                // Add event listener safely without breaking single/double quote formats
+                const btn = card.querySelector('.details-btn');
+                btn.addEventListener('click', () => {
+                    showThemeDetails(
+                        theme.cluster_id,
+                        theme.theme_name,
+                        importance,
+                        importanceColor,
+                        theme.representative_quote,
+                        theme.action_idea,
+                        theme.review_count
+                    );
+                });
+                
                 themesContainer.appendChild(card);
             });
             lucide.createIcons();
+        }
+
+        async function showThemeDetails(clusterId, themeName, importance, importanceColor, quote, actionIdea, count) {
+            // Populate modal content
+            document.getElementById('modal-title').textContent = themeName;
+            
+            const badge = document.getElementById('modal-importance-badge');
+            badge.textContent = importance;
+            badge.className = `text-[9px] bg-${importanceColor}-100 text-${importanceColor}-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider`;
+            
+            document.getElementById('modal-review-count').textContent = `Mentioned in ${count} reviews`;
+            document.getElementById('modal-action-idea').textContent = actionIdea || 'No actionable recommendation generated.';
+            document.getElementById('modal-quote').textContent = quote ? `"${quote}"` : '(No representative quote found)';
+            
+            // Show modal
+            const modal = document.getElementById('details-modal');
+            modal.classList.remove('hidden');
+            
+            // Fetch supporting reviews
+            const listContainer = document.getElementById('modal-reviews-list');
+            listContainer.innerHTML = `
+                <div class="animate-pulse space-y-3">
+                    <div class="h-16 bg-slate-100 rounded-xl"></div>
+                    <div class="h-16 bg-slate-100 rounded-xl"></div>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`${API_BASE}/reviews?product_id=${PRODUCT_ID}&cluster_id=${clusterId}&limit=10`);
+                const reviews = await response.json();
+                
+                listContainer.innerHTML = '';
+                if (reviews.length === 0) {
+                    listContainer.innerHTML = `<p class="text-slate-400 text-xs italic text-center py-4">No supporting reviews found in database.</p>`;
+                    return;
+                }
+                
+                reviews.forEach(rev => {
+                    const stars = '★'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating);
+                    const card = document.createElement('div');
+                    card.className = 'border border-slate-100 p-4 rounded-2xl bg-slate-50/50 space-y-1.5';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-amber-500 tracking-tight">${stars}</span>
+                            <span class="text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${rev.store.replace('_', ' ')}</span>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-relaxed">"${rev.scrubbed_text || rev.text}"</p>
+                    `;
+                    listContainer.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Failed to fetch reviews:", err);
+                listContainer.innerHTML = `<p class="text-red-500 text-xs italic text-center py-4">Failed to load supporting reviews.</p>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').classList.add('hidden');
         }
 
         function filterThemes(level) {
@@ -406,7 +605,7 @@
         }
 
         async function triggerPulse() {
-            const btn = document.getElementById('ship-btn');
+            const btn = document.getElementById('generate-btn');
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<span>Processing...</span>';
@@ -417,6 +616,23 @@
                 loadDashboard();
             } catch (err) {
                 showToast("Trigger failed.", true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        async function publishPulse() {
+            const btn = document.getElementById('ship-btn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>Publishing...</span>';
+            try {
+                const response = await fetch(`${API_BASE}/publish/${PRODUCT_ID}`, { method: 'POST' });
+                showToast("Publishing Triggered!");
+                loadDashboard();
+            } catch (err) {
+                showToast("Publishing failed.", true);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHTML;

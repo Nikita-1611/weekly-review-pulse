@@ -27,3 +27,5 @@ Thumbs.db
 superbase*
 startup.log
 scratch/
+huggingface_password.txt
+postgresql.txt

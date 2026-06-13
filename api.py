@@ -24,7 +24,7 @@ sys.path.insert(0, str(PHASES_DIR / "phase4-idempotency"))
 import run_pulse
 
 from agent.config import yaml_settings
-from agent.storage import get_connection, init_db
+from agent.storage import get_connection, init_db, adapt_query
 from agent.helpers import WindowHelper
 from run_pulse import run_pipeline
 
@@ -63,6 +63,7 @@ class Review(BaseModel):
     rating: int
     text: str
     scrubbed_text: Optional[str]
+    cluster_id: Optional[int] = None
 
 # --- Endpoints ---
 
@@ -82,24 +83,32 @@ def get_products():
     ]
 
 @app.get("/api/reviews", response_model=List[Review])
-def get_recent_reviews(product_id: Optional[str] = None, limit: int = 50):
+def get_recent_reviews(product_id: Optional[str] = None, cluster_id: Optional[int] = None, limit: int = 50):
     conn = get_connection()
-    query = "SELECT id, product_id, store, rating, raw_text as text, scrubbed_text FROM reviews"
+    query = "SELECT id, product_id, store, rating, raw_text as text, scrubbed_text, cluster_id FROM reviews"
+    where_clauses = []
     params = []
     if product_id:
-        query += " WHERE product_id = ?"
+        where_clauses.append("product_id = %s")
         params.append(product_id)
-    query += " ORDER BY ingestion_timestamp DESC LIMIT ?"
+    if cluster_id is not None:
+        where_clauses.append("cluster_id = %s")
+        params.append(cluster_id)
+        
+    if where_clauses:
+        query += " WHERE " + " AND ".join(where_clauses)
+        
+    query += " ORDER BY ingestion_timestamp DESC LIMIT %s"
     params.append(limit)
     
-    rows = conn.execute(query, params).fetchall()
+    rows = conn.execute(adapt_query(query), tuple(params)).fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
 @app.get("/api/history", response_model=List[RunStatus])
 def get_run_history():
     conn = get_connection()
-    rows = conn.execute("SELECT run_id, product_id, iso_week, status, updated_at FROM runs ORDER BY updated_at DESC LIMIT 20").fetchall()
+    rows = conn.execute(adapt_query("SELECT run_id, product_id, iso_week, status, updated_at FROM runs ORDER BY updated_at DESC LIMIT 20")).fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
@@ -108,24 +117,24 @@ def get_dashboard_summary(product_id: str):
     conn = get_connection()
     
     # 1. Total Reviews
-    total_reviews = conn.execute("SELECT count(*) FROM reviews WHERE product_id = ?", (product_id,)).fetchone()[0]
+    total_reviews = conn.execute(adapt_query("SELECT count(*) FROM reviews WHERE product_id = %s"), (product_id,)).fetchone()[0]
     
     # 2. Latest Run
-    latest_run = conn.execute("""
+    latest_run = conn.execute(adapt_query("""
         SELECT status, updated_at, iso_week 
         FROM runs 
-        WHERE product_id = ? 
+        WHERE product_id = %s 
         ORDER BY updated_at DESC LIMIT 1
-    """, (product_id,)).fetchone()
+    """), (product_id,)).fetchone()
     
     # 3. Themes (Phase 3 logic)
     # Fetch themes and join with review counts per cluster
-    themes_rows = conn.execute("""
+    themes_rows = conn.execute(adapt_query("""
         SELECT t.id, t.theme_name, t.quote, t.action_idea, t.cluster_id,
-               (SELECT COUNT(*) FROM reviews r WHERE r.cluster_id = t.cluster_id AND r.product_id = ?) as count
+               (SELECT COUNT(*) FROM reviews r WHERE r.cluster_id = t.cluster_id AND r.product_id = %s) as count
         FROM themes t
-        WHERE t.run_id = (SELECT run_id FROM runs WHERE product_id = ? ORDER BY updated_at DESC LIMIT 1)
-    """, (product_id, product_id)).fetchall()
+        WHERE t.run_id = (SELECT run_id FROM runs WHERE product_id = %s ORDER BY updated_at DESC LIMIT 1)
+    """), (product_id, product_id)).fetchall()
     
     themes = []
     for row in themes_rows:
@@ -143,16 +152,17 @@ def get_dashboard_summary(product_id: str):
             "action_idea": row["action_idea"],
             "importance": importance,
             "representative_quote": row["quote"],
-            "review_count": count
+            "review_count": count,
+            "cluster_id": row["cluster_id"]
         })
     
     # 4. Activity Log
-    activity = conn.execute("""
+    activity = conn.execute(adapt_query("""
         SELECT status, updated_at 
         FROM runs 
-        WHERE product_id = ? 
+        WHERE product_id = %s 
         ORDER BY updated_at DESC LIMIT 5
-    """, (product_id,)).fetchall()
+    """), (product_id,)).fetchall()
     
     conn.close()
     
@@ -201,6 +211,57 @@ def publish_pulse(product_id: str, background_tasks: BackgroundTasks, week: Opti
     from run_pulse import publish_draft
     background_tasks.add_task(publish_draft, product_id, iso_week)
     return {"message": f"Publishing triggered for {product_id} ({iso_week})", "status": "publishing"}
+
+@app.get("/api/email-preview/{product_id}")
+def get_email_preview(product_id: str, week: Optional[str] = None):
+    valid_ids = [p.id for p in yaml_settings.products]
+    if product_id not in valid_ids:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    prod_config = next((p for p in yaml_settings.products if p.id == product_id), None)
+    iso_week = week or WindowHelper.get_current_iso_week()
+    
+    # Load actual themes from the database for the preview
+    conn = get_connection()
+    latest_run = conn.execute(adapt_query("""
+        SELECT run_id FROM runs WHERE product_id = %s ORDER BY updated_at DESC LIMIT 1
+    """), (product_id,)).fetchone()
+    
+    insights = []
+    if latest_run:
+        run_id = latest_run["run_id"]
+        # Fetch themes and calculate counts/importance
+        themes_rows = conn.execute(adapt_query("""
+            SELECT t.theme_name, t.quote, t.action_idea, t.cluster_id,
+                   (SELECT COUNT(*) FROM reviews r WHERE r.cluster_id = t.cluster_id AND r.product_id = %s) as count
+            FROM themes t
+            WHERE t.run_id = %s
+        """), (product_id, run_id)).fetchall()
+        
+        for row in themes_rows:
+            count = row["count"]
+            if count > 100:
+                importance = "High"
+            elif count > 40:
+                importance = "Medium"
+            else:
+                importance = "Low"
+            insights.append({
+                "theme_name": row["theme_name"],
+                "quote": row["quote"],
+                "action_idea": row["action_idea"],
+                "importance": importance,
+                "review_count": count
+            })
+    conn.close()
+    
+    from delivery.renderer import render_email_body
+    from fastapi.responses import HTMLResponse
+    
+    doc_url = f"https://docs.google.com/document/d/{prod_config.google_doc_id}"
+    html_content = render_email_body(prod_config.name, iso_week, doc_url, insights=insights)
+    
+    return HTMLResponse(content=html_content, status_code=200)
 
 @app.get("/api/health")
 def health_check():

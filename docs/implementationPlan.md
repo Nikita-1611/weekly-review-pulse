@@ -229,6 +229,7 @@ The root `run_pulse.py` acts as the master brain. It manages `sys.path` to allow
 1. Implement `config.yaml` validation.
 2. Implement CLI arguments `--product` and `--iso-week`.
 3. Setup `cron` for Monday 8:00 AM IST: `0 8 * * 1 TZ=Asia/Kolkata python /path/to/run_pulse.py --product all`
+4. [Future Expansion] Add support for the other 4 products: INDMoney, Kuvera, PowerUp Money, and Wealth Monitor.
 
 **Edge Cases & Handling:**
 - *config.yaml missing required fields:* **Fail Fast** on initialization. Throw an immediate validation error.

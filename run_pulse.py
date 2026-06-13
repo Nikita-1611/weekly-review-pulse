@@ -111,16 +111,26 @@ def step_clustering(product_id, run_id=None):
     
     # Perform clustering
     import numpy as np
-    from psycopg2.extras import DictCursor
-    from agent.storage import get_connection
+    from agent.storage import get_connection, IS_SQLITE, adapt_query
     conn = get_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("""
-        SELECT r.id, r.raw_text, e.embedding 
-        FROM reviews r 
-        JOIN review_embeddings e ON r.id = e.review_id 
-        WHERE r.product_id = %s
-    """, (product_id,))
+    if IS_SQLITE:
+        cursor = conn.cursor()
+        query = adapt_query("""
+            SELECT r.id, r.raw_text, e.embedding 
+            FROM reviews r 
+            JOIN review_embeddings e ON r.id = e.review_id 
+            WHERE r.product_id = %s
+        """)
+        cursor.execute(query, (product_id,))
+    else:
+        from psycopg2.extras import DictCursor
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        cursor.execute("""
+            SELECT r.id, r.raw_text, e.embedding 
+            FROM reviews r 
+            JOIN review_embeddings e ON r.id = e.review_id 
+            WHERE r.product_id = %s
+        """, (product_id,))
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -162,8 +172,8 @@ def step_publish(prod_config, product_id, iso_week, run_id=None, action=None):
         return {"status": "failed", "error": "No themes found."}
     
     # Rendering
-    markdown = render_markdown_narrative(product_id, iso_week, insights)
-    html = render_email_body(product_id, iso_week, f"https://docs.google.com/document/d/{prod_config.google_doc_id}")
+    markdown = render_markdown_narrative(prod_config.name, iso_week, insights)
+    html = render_email_body(prod_config.name, iso_week, f"https://docs.google.com/document/d/{prod_config.google_doc_id}", insights)
     
     # Delivery
     skip_docs = (action == 'resume_email')
