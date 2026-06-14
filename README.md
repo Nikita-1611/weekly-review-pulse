@@ -22,22 +22,23 @@ Teams need a way to **instantly see what matters most** without manual parsing, 
 
 ## 💡 The Solution
 **Weekly Review Pulse** automates the entire feedback lifecycle:
-1. **Aggregates:** Scrapes Play Store and App Store reviews for configured apps (like Groww) on a weekly schedule.
-2. **Scrubs & Cleans:** Scrubs Personal Identifiable Information (PII) from user text to ensure compliance and privacy.
-3. **Clusters using AI:** Leverages a Large Language Model (LLM) to categorize issues into semantic feedback themes (e.g., *"Peak-Time Trading Lag"*, *"Delayed Deposit Processing"*).
-4. **Prioritizes:** Ranks themes by severity (Critical, High, Medium, Low) and highlights representative user quotes.
+1. **Aggregates:** Scrapes Play Store reviews (using Playwright scrolling) and App Store reviews (using iTunes RSS JSON feeds) for configured apps.
+2. **Scrubs & Cleans:** Scrubs Personal Identifiable Information (PII) like emails, phone numbers, and names using Regex and spaCy NER (`en_core_web_sm`).
+3. **Embeds & Clusters:** Embeds review text using a local SentenceTransformer model (`BAAI/bge-small-en-v1.5`) and groups them into semantic themes using HDBSCAN.
+4. **Analyzes via LLM:** Passes clustered reviews to Groq's `llama-3.1-8b-instant` model to extract a descriptive theme name, an actionable product recommendation, and a verified verbatim quote.
 5. **Delivers:** Automatically writes a weekly digest directly to a Google Doc and emails a beautifully formatted HTML report to stakeholders using Gmail.
-6. **Showcases:** Exposes a gorgeous local/web dashboard to track runs, inspect review clusters, and trigger/publish digests manually.
+6. **Showcases:** Exposes a local/web dashboard to track runs, inspect review clusters, and trigger/publish digests manually.
 
 ---
 
 ## ✨ Key Features
-* **Semantic Feedback Themes:** Clusters related reviews together so you can see the volume and severity of specific issues.
+* **Semantic Feedback Themes:** Clusters reviews using HDBSCAN and local embeddings so you can see the volume and severity of specific issues.
+* **PII Redaction:** De-identifies reviews before processing to protect user privacy.
 * **Ratings & Sentiment Overview:** Visualizes store ratings and tracks the weekly pulse of user sentiment.
-* **Representative Quotes:** Extracts actual user quotes for each theme so developers can read first-hand issue descriptions.
+* **Representative Quotes:** Extracts and validates actual user quotes for each theme.
 * **Auto-Generated Google Docs & Emails:** Seamlessly writes structured summaries to Google Docs and sends HTML emails via Gmail.
 * **Interactive Dashboard:** Allows product managers to review historical pipeline runs, preview reports in the browser, and publish digests on demand.
-* **Automated Weekly Runs:** A scheduled pipeline runs every Monday morning without human intervention.
+* **Automated Weekly Runs:** A scheduled pipeline runs every Monday at 04:00 UTC (9:30 AM IST) via GitHub Actions.
 
 ---
 
@@ -47,7 +48,7 @@ The project is built around a decoupled architecture split into three main compo
 
 1. **Hugging Face Space (Dashboard & API):** Hosts the interactive dashboard and FastAPI bridge backend. Users can check historical logs, preview drafts, and trigger manual runs.
 2. **Render (Model Context Protocol Host):** Hosts a custom **FastMCP** server that manages authentication and execution of the Google Workspace tools (Gmail/Docs APIs). Keeping this server remote keeps the core pipeline stateless and secures OAuth secrets.
-3. **GitHub Actions (Pipeline Runner):** Executes the weekly automation pipeline (data fetching, LLM clustering, database synchronization) via a cron schedule.
+3. **GitHub Actions (Pipeline Runner):** Executes the weekly automation pipeline (data fetching, local embedding, LLM synthesis, database synchronization) via a cron schedule.
 
 ### Architecture Diagram
 ```mermaid
@@ -67,7 +68,7 @@ graph TD
 
     subgraph External_Services [External Services]
         Supabase[(Supabase PostgreSQL)]
-        Groq[Groq API - Llama LLM]
+        Groq[Groq API - llama-3.1-8b-instant]
         Google[Google Docs & Gmail APIs]
     end
 
@@ -87,10 +88,10 @@ graph TD
 ## 🛠️ Tech Stack
 * **Backend Framework:** FastAPI (Python)
 * **Model Context Protocol (MCP):** FastMCP (SSE Transport)
-* **AI Engine:** Groq API (Llama-3 models)
+* **AI Engine & NLP:** Groq API (`llama-3.1-8b-instant`), spaCy (`en_core_web_sm`), SentenceTransformers (`BAAI/bge-small-en-v1.5`)
 * **Database:** Supabase (PostgreSQL) / SQLite (Fallback)
 * **APIs:** Google Workspace APIs (Docs & Gmail via Google Client Libraries)
-* **Data Gathering:** Apple iTunes RSS feed & custom Google Play Store scraping
+* **Data Gathering:** Apple iTunes RSS feed & Google Play Store Playwright Scraper
 * **Deployment & CI/CD:** Hugging Face Spaces (Docker), Render, GitHub Actions
 
 ---
@@ -122,11 +123,18 @@ MCP_SERVER_URL=https://weekly-review-pulse.onrender.com/sse
 ```
 
 ### Running Locally
+
 1. **Install Dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
-2. **Start the API & Dashboard:**
+
+2. **Start the Google Workspace MCP Server:**
+   ```bash
+   python MCP_Server/google_mcp_servers.py
+   ```
+
+3. **Start the FastAPI API & Dashboard:**
    ```bash
    python run_server.py
    ```
