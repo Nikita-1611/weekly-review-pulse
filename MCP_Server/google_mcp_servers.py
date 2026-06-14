@@ -15,32 +15,60 @@ SCOPES = [
 
 mcp = FastMCP("GoogleWorkspaceReal")
 
+import json
+
 def get_creds():
     """Handles OAuth2 authentication and token management."""
     creds = None
-    # Check current directory and script directory
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    token_path = 'token.json' if os.path.exists('token.json') else os.path.join(script_dir, 'token.json')
-    creds_path = 'credentials.json' if os.path.exists('credentials.json') else os.path.join(script_dir, 'credentials.json')
+    
+    # 1. Try to load token from environment variable
+    token_env = os.environ.get("GOOGLE_TOKEN_JSON")
+    if token_env:
+        try:
+            token_info = json.loads(token_env)
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except Exception as e:
+            print(f"Error loading token from GOOGLE_TOKEN_JSON env var: {e}")
 
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    # 2. Fall back to local file
+    if not creds:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        token_path = 'token.json' if os.path.exists('token.json') else os.path.join(script_dir, 'token.json')
+        if os.path.exists(token_path):
+            creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            # Use the credentials.json you downloaded
-            if not os.path.exists(creds_path):
-                raise FileNotFoundError(f"Missing credentials.json. Checked: {creds_path}")
+            # 3. Try to load credentials from environment variable
+            creds_env = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+            if creds_env:
+                try:
+                    creds_info = json.loads(creds_env)
+                    flow = InstalledAppFlow.from_client_config(creds_info, SCOPES)
+                except Exception as e:
+                    raise ValueError(f"Error loading credentials from GOOGLE_CREDENTIALS_JSON env var: {e}")
+            else:
+                # 4. Fall back to local file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                creds_path = 'credentials.json' if os.path.exists('credentials.json') else os.path.join(script_dir, 'credentials.json')
+                if not os.path.exists(creds_path):
+                    raise FileNotFoundError(f"Missing credentials.json. Checked: {creds_path}")
+                flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
             
-            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
             creds = flow.run_local_server(port=0)
         
-        # Save the credentials for the next run
-        with open(token_path, 'w') as token:
-            token.write(creds.to_json())
+        # Save the credentials for the next run (only if not loaded from environment)
+        if not token_env:
+            try:
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                token_path = os.path.join(script_dir, 'token.json')
+                with open(token_path, 'w') as token:
+                    token.write(creds.to_json())
+            except Exception as e:
+                print(f"Could not save token.json locally: {e}")
     return creds
 
 @mcp.tool()

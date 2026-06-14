@@ -15,28 +15,54 @@ SCOPES = [
 
 mcp = FastMCP("GoogleWorkspaceReal")
 
+import json
+
 def get_creds():
     """Handles OAuth2 authentication and token management."""
     creds = None
-    # token.json stores the user's access and refresh tokens
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    # 1. Try to load token from environment variable
+    token_env = os.environ.get("GOOGLE_TOKEN_JSON")
+    if token_env:
+        try:
+            token_info = json.loads(token_env)
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except Exception as e:
+            print(f"Error loading token from GOOGLE_TOKEN_JSON env var: {e}")
+
+    # 2. Fall back to local file
+    if not creds:
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            # Use the credentials.json you downloaded
-            if not os.path.exists('credentials.json'):
-                raise FileNotFoundError("Missing credentials.json in root directory. Please download it from Google Cloud Console.")
+            # 3. Try to load credentials from environment variable
+            creds_env = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+            if creds_env:
+                try:
+                    creds_info = json.loads(creds_env)
+                    flow = InstalledAppFlow.from_client_config(creds_info, SCOPES)
+                except Exception as e:
+                    raise ValueError(f"Error loading credentials from GOOGLE_CREDENTIALS_JSON env var: {e}")
+            else:
+                # 4. Fall back to local file
+                if not os.path.exists('credentials.json'):
+                    raise FileNotFoundError("Missing credentials.json in root directory. Please download it from Google Cloud Console.")
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+        # Save the credentials for the next run (only if not loaded from environment)
+        if not token_env:
+            try:
+                with open('token.json', 'w') as token:
+                    token.write(creds.to_json())
+            except Exception as e:
+                print(f"Could not save token.json: {e}")
     return creds
 
 @mcp.tool()
