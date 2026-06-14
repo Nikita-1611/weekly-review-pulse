@@ -32,6 +32,10 @@ COPY --chown=user:user . .
 # Ensure data directory exists for persistent volume and is owned by user
 RUN mkdir -p $HOME/app/data
 
+# Copy startup script and make it executable
+COPY --chown=user:user startup.sh .
+RUN chmod +x startup.sh
+
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
@@ -39,4 +43,4 @@ ENV PULSE_DB_PATH=$HOME/app/data/pulse.db
 
 EXPOSE 8000
 
-CMD ["python", "run_server.py"]
+CMD ["bash", "startup.sh"]
