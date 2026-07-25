@@ -52,35 +52,36 @@ The project is built around a decoupled architecture split into three main compo
 
 ### Architecture Diagram
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#d9714e','primaryTextColor':'#ffffff','primaryBorderColor':'#b45838','lineColor':'#888','fontSize':'14px'}}}%%
 graph TD
-    subgraph GitHub_Actions [GitHub Actions (Weekly Runner)]
+    subgraph GitHub_Actions ["GitHub Actions (Weekly Runner)"]
         Pipeline[run_pulse.py Pipeline]
     end
 
-    subgraph Hugging_Face [Hugging Face Space (Dashboard)]
+    subgraph Hugging_Face ["Hugging Face Space (Dashboard)"]
         UI[Interactive HTML Dashboard]
         API[FastAPI Backend]
     end
 
-    subgraph Render [Render (MCP Hosting)]
-        MCP[FastMCP Google Workspace Server]
+    subgraph Render ["Render (MCP Hosting)"]
+        MCP["FastMCP Google Workspace Server"]
     end
 
-    subgraph External_Services [External Services]
-        Supabase[(Supabase PostgreSQL)]
-        Groq[Groq API - llama-3.1-8b-instant]
-        Google[Google Docs & Gmail APIs]
+    subgraph External_Services ["External Services"]
+        Supabase[("Supabase PostgreSQL")]
+        Groq["Groq API - llama-3.1-8b-instant"]
+        Google["Google Docs & Gmail APIs"]
     end
 
-    %% Flow connections
     Pipeline -->|Read/Write Data| Supabase
     Pipeline -->|Analyze & Cluster| Groq
     Pipeline -->|SSE Call Tools| MCP
     MCP -->|Write Doc / Send Email| Google
-    
+
     API -->|Fetch Reviews & Runs| Supabase
     UI <--> API
     API -->|Trigger Pipeline Runs| Pipeline
+```
 ```
 
 ---
