@@ -123,7 +123,7 @@ GOOGLE_TOKEN_JSON={"token": "...", "refresh_token": "...", ...}
 MCP_SERVER_URL=https://weekly-review-pulse.onrender.com/sse
 ```
 
-### Running Locally
+### Running Locally (for development)
 
 1. **Install Dependencies:**
    ```bash
@@ -140,3 +140,11 @@ MCP_SERVER_URL=https://weekly-review-pulse.onrender.com/sse
    python run_server.py
    ```
    Open your browser at `http://localhost:8000` to view the dashboard.
+
+   ## Demo
+   
+
+https://github.com/user-attachments/assets/b646b1a8-aa74-490b-8a0b-e9c36c322ca8
+
+
+
